@@ -1,7 +1,587 @@
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DivMaxOMG</title>
-<style>body{margin:0;font:16px/1.6 system-ui,sans-serif;background:#faf8fc;color:#1f1430}main{max-width:640px;margin:auto;padding:40px 16px}h1{color:#34125c}a{color:#d81b62}</style></head>
-<body><main><h1>DivMaxOMG</h1><p>Desktop tool that cuts your long videos into vertical shorts and sends them to your TikTok drafts.</p>
-<ul><li><a href="terms.html/">Terms of Service</a></li><li><a href="privacy.html/">Privacy Policy</a></li></ul></main></body>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}</style>
+</head>
+<body>
+<title>Studio Shorts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* Layout : flux principal vidéo → shorts en haut, aperçu 9:16 à droite sur grand écran, outils annexes dessous */
+:root{
+  --bg:#f3f1f6; --panel:#ffffff; --fg:#1c1626; --mut:#6b6377; --line:#ddd6e6;
+  --accent:#e0245e; --accent-fg:#ffffff;
+  --display:"Archivo Black","Arial Black",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15111c;--panel:#1f1a28;--fg:#efeaf5;--mut:#a39bb0;--line:#342c40;--accent:#ff4f86;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15111c;--panel:#1f1a28;--fg:#efeaf5;--mut:#a39bb0;--line:#342c40;--accent:#ff4f86;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--body)}
+main{max-width:1000px;margin:auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+h1{font:2rem/1.1 var(--display);margin:0;text-wrap:balance}
+h1 span{color:var(--accent)}
+h2{font:1.1rem/1.2 var(--display);margin:0 0 4px;text-wrap:balance}
+h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:12px 0 4px}
+.lead{color:var(--mut);margin:4px 0 0;max-width:65ch}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px;min-width:0;align-content:start}
+.cols{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:820px){.cols{grid-template-columns:1fr 320px}}
+label{display:grid;gap:2px;font-size:.85rem;color:var(--mut);min-width:0}
+input,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:end}.row>label{flex:1 1 140px}
+button{font:600 .9rem var(--body);border:0;border-radius:8px;padding:9px 14px;background:var(--accent);color:var(--accent-fg);cursor:pointer}
+button.big{font-size:1.05rem;padding:12px 20px}
+button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:wait}
+input:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+pre{white-space:pre-wrap;background:var(--bg);border-radius:8px;padding:10px;margin:0;min-height:2.5em;overflow-x:auto}
+.mut{color:var(--mut);font-size:.85rem}
+.status{font-weight:600;font-variant-numeric:tabular-nums;min-height:1.5em;margin:0}
+.meter{height:10px;background:var(--line);border-radius:5px;overflow:hidden}.meter>div{height:100%;background:var(--accent);width:0}
+ol,ul{margin:0;padding-left:1.4em;display:grid;gap:6px}
+.done{opacity:.5;text-decoration:line-through}
+canvas{width:100%;max-width:300px;aspect-ratio:9/16;display:block;margin:auto;border-radius:12px;background:#000}
+.gal{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.gal li{display:grid;gap:4px;align-content:start}
+.gal video{width:100%;aspect-ratio:9/16;border-radius:8px;background:#000}
+.gal .btns{display:flex;flex-wrap:wrap;gap:4px}.gal button{padding:6px 8px;font-size:.8rem}
+.warn{color:var(--accent)}
+details>summary{cursor:pointer;font:1.1rem var(--display)}
+</style>
+
+<main>
+  <header>
+    <h1>Studio <span>Shorts</span></h1>
+    <p id="localLink" style="margin:8px 0 0"><a href="http://localhost:8765" target="_blank" rel="noopener" style="display:inline-block;background:var(--accent);color:var(--accent-fg);padding:9px 14px;border-radius:8px;font-weight:600;text-decoration:none">Ouvrir la version locale (envoi TikTok) ↗</a>
+      <span class="mut"> Nécessite Studio Shorts démarré sur ton PC.</span></p>
+  </header>
+
+  <div class="cols">
+    <section>
+      <h2>Vidéo → shorts automatiques</h2>
+      <label for="src">Tes vidéos (une ou plusieurs · MP4, MOV, WebM · jusqu'à environ 20 min chacune)<input id="src" type="file" accept="video/*" multiple></label>
+      <div class="row">
+        <label for="len">Durée d'un short (s)<input id="len" type="number" value="30" min="5" max="90"></label>
+        <label for="max">Nombre de shorts max<input id="max" type="number" value="10" min="1" max="30"></label>
+        <label for="mbps">Qualité (Mbit/s)<input id="mbps" type="number" value="4" min="1" max="12" step="0.5"></label>
+      </div>
+      <div class="row">
+        <label for="maxMode" style="flex-basis:100%;display:flex;gap:8px;align-items:center;color:var(--fg)"><input id="maxMode" type="checkbox" style="width:auto"> Faire le maximum de shorts</label>
+        <label for="handle">Pseudo incrusté (optionnel)<input id="handle" placeholder="@moncompte"></label>
+        <label for="cta">Appel à l'action de fin (optionnel)<input id="cta" placeholder="Suis-moi pour la partie {n}"></label>
+      </div>
+      <div id="resume" hidden style="border:1px solid var(--accent);border-radius:8px;padding:10px;display:grid;gap:8px">
+        <p id="resumeTxt" style="margin:0"></p>
+        <div class="row"><button id="resumeGo" type="button">Reprendre</button><button id="resumeDrop" class="ghost" type="button">Abandonner</button></div>
+      </div>
+      <button id="go" class="big" type="button">Créer les shorts</button>
+      <p id="sStatus" class="status" aria-live="polite"></p>
+      <div class="meter"><div id="prog"></div></div>
+      <p class="mut">Le montage se fait en temps réel : 10 shorts de 30 s prennent environ 5 minutes. Garde cet onglet visible jusqu'à la fin.</p>
+
+      <h3>Mes shorts (gardés dans ce navigateur)</h3>
+      <div class="row">
+        <button id="exportAll" type="button">Exporter tous les shorts (.zip)</button>
+        <button id="clearAll" class="ghost" type="button">Tout effacer</button>
+      </div>
+      <div id="tiktokBox" hidden style="display:grid;gap:8px">
+        <div class="row">
+          <button id="tiktokSend" type="button">Envoyer tous les shorts dans mes brouillons TikTok</button>
+          <a id="tiktokLogin" href="/api/tiktok/login" target="_blank" rel="noopener" style="color:var(--accent);align-self:center">Se connecter à TikTok</a>
+        </div>
+        <p id="tiktokInfo" class="mut" style="margin:0"></p>
+        <form id="tiktokCreds" hidden style="display:grid;gap:8px">
+          <div class="row">
+            <label for="tkKey">TikTok Client key<input id="tkKey" autocomplete="off" required></label>
+            <label for="tkSecret">TikTok Client secret<input id="tkSecret" type="password" autocomplete="off" required></label>
+            <button type="submit">Enregistrer</button>
+          </div>
+        </form>
+        <button id="tiktokEdit" class="ghost" type="button" hidden style="justify-self:start">Modifier les identifiants TikTok</button>
+        <pre id="tiktokLog" hidden></pre>
+      </div>
+      <ul id="gallery" class="gal"></ul>
+      <p id="galEmpty" class="mut">Aucun short pour l'instant. Ils apparaîtront ici au fur et à mesure du montage.</p>
+    </section>
+    <section>
+      <h2>Aperçu</h2>
+      <canvas id="cv" width="1080" height="1920"></canvas>
+    </section>
+  </div>
+
+  <p class="mut" style="margin:0"><a href="https://yelixii.github.io/divmaxomg/terms.html/" target="_blank" rel="noopener" style="color:var(--mut)">Terms of Service</a> · <a href="https://yelixii.github.io/divmaxomg/privacy.html/" target="_blank" rel="noopener" style="color:var(--mut)">Privacy Policy</a></p>
+  <details>
+    <summary>Autres outils : analyse et prompts Google Flow</summary>
+    <div style="display:grid;gap:16px;margin-top:12px">
+      <section>
+        <h2>Analyser un texte, une image ou ta voix</h2>
+        <label for="q">Question ou texte<textarea id="q" rows="3">Décris précisément ce contenu et propose 3 idées de vidéos courtes à partir de lui.</textarea></label>
+        <div class="row">
+          <label for="img">Image (optionnel)<input id="img" type="file" accept="image/*"></label>
+          <button id="dictate" class="ghost" type="button" hidden>🎤 Dicter</button>
+          <button id="analyze" type="button">Analyser</button>
+        </div>
+        <pre id="out" aria-live="polite"></pre>
+      </section>
+      <section>
+        <h2>Prompts Google Flow</h2>
+        <p class="mut">Quota : 500 secondes par jour, soit 50 vidéos de 10 s. Coche chaque prompt une fois la vidéo générée dans Flow.</p>
+        <div class="row">
+          <label for="theme" style="flex:3 1 220px">Thème<input id="theme" value="Café artisanal du matin"></label>
+          <label for="count">Vidéos<input id="count" type="number" value="50" min="1" max="50"></label>
+          <label for="dur">Secondes<input id="dur" type="number" value="10" min="1" max="60"></label>
+          <button id="plan" type="button">Générer</button>
+        </div>
+        <div class="status" id="quotaTxt">0 / 500 s aujourd'hui</div>
+        <div class="meter"><div id="quotaBar"></div></div>
+        <div class="row">
+          <button id="copy" class="ghost" type="button">Copier les prompts restants</button>
+          <button id="dlTxt" class="ghost" type="button">Enregistrer en .txt</button>
+        </div>
+        <ol id="prompts"></ol>
+      </section>
+    </div>
+  </details>
+</main>
+
+<script>
+const LIMIT = 500;
+const $ = id => document.getElementById(id);
+// <pure> fonctions sans effet de bord, testées par tests/pure.test.mjs
+const today = () => new Date().toISOString().slice(0, 10);
+const usedToday = list => list.filter(p => p.doneDate === today()).reduce((s, p) => s + p.dur, 0);
+// Les K meilleures fenêtres de L secondes, sans chevauchement, triées dans l'ordre de la vidéo
+function pickSegments(energy, L, K) {
+  if (energy.length <= L) return [0];
+  const pre = [0]; for (const e of energy) pre.push(pre[pre.length - 1] + e);
+  const cand = [];
+  for (let s = 0; s + L <= energy.length; s++) cand.push([(pre[s + L] - pre[s]) / L, s]);
+  cand.sort((a, b) => b[0] - a[0]);
+  const out = [];
+  for (const [, s] of cand) { if (out.length >= K) break; if (out.every(o => Math.abs(o - s) >= L)) out.push(s); }
+  return out.sort((a, b) => a - b);
+}
+const bitrateBps = v => { const n = parseFloat(v); return (isFinite(n) && n > 0 ? Math.min(12, Math.max(1, n)) : 4) * 1e6; };
+// Texte de fin : {n} = numéro de la partie suivante, retiré sur le dernier short
+const ctaText = (i, k, perso) => {
+  const c = String(perso || '').trim(), last = i >= k - 1;
+  if (!c) return last ? 'Abonne-toi pour la suite' : `Suis-moi pour la partie ${i + 2}`;
+  return c.replace(/\{n\}/g, last ? '' : String(i + 2)).replace(/\s+/g, ' ').trim();
+};
+// Mode maximum : toute la vidéo en tranches consécutives, sans plafond ; sinon les meilleurs passages (30 max)
+const planSegments = (energy, dur, len, kMax, maxMode) => {
+  const n = Math.max(1, Math.floor(dur / len));
+  if (maxMode) return Array.from({ length: n }, (_, i) => i * len);
+  return pickSegments(energy, len, Math.min(30, Math.max(1, kMax), n));
+};
+// Un travail = la liste des vidéos à traiter + les réglages figés au lancement
+const buildJob = (files, settings) => ({
+  created: new Date().toISOString(),
+  settings: { ...settings },
+  files: [...files].map(f => ({ name: f.name, size: f.size, lastModified: f.lastModified, starts: null, done: 0, skipped: false }))
+});
+const isFinished = f => f.skipped || (!!f.starts && f.done >= f.starts.length);
+const nextPending = job => { const fi = job.files.findIndex(f => !isFinished(f)); return fi < 0 ? null : { fi, i: job.files[fi].done }; };
+// Retrouve les vidéos re-sélectionnées (nom + taille) ; seules les vidéos pas finies sont demandées
+const matchFiles = (job, files) => {
+  const ordered = job.files.map(e => [...files].find(f => f.name === e.name && f.size === e.size) || null);
+  return { ordered, missing: job.files.filter((e, k) => !isFinished(e) && !ordered[k]).map(e => e.name) };
+};
+// </pure>
+const status = s => { $('sStatus').textContent = s; };
+let sample = null, downloads = null;
+
+// ---- Stockage local (IndexedDB, propre à ce navigateur) ----
+const dbp = new Promise(res => {
+  try {
+    const r = indexedDB.open('studio-shorts', 2);
+    r.onupgradeneeded = () => {
+      for (const s of ['prompts', 'videos']) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: 'id', autoIncrement: true });
+      if (!r.result.objectStoreNames.contains('jobs')) r.result.createObjectStore('jobs', { keyPath: 'id' });
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => res(null);
+  } catch { res(null); }
+});
+const wait = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const os = async (n, m = 'readonly') => { const db = await dbp; if (!db) throw new Error('Stockage du navigateur indisponible'); return db.transaction(n, m).objectStore(n); };
+const all = async n => { try { return await wait((await os(n)).getAll()); } catch { return []; } };
+const put = async (n, v) => wait((await os(n, 'readwrite')).put(v));
+
+const ERR = { not_granted: "Tu as refusé l'accès à Claude pour cette page.", rate_limited: 'Trop de demandes. Réessaie dans une minute.' };
+async function busy(btn, fn, out) {
+  btn.disabled = true;
+  try { await fn(); } catch (e) { (out || $('sStatus')).textContent = 'Erreur : ' + (ERR[e?.code] || e?.message || e); }
+  finally { btn.disabled = false; }
+}
+const need = () => { if (!sample) throw new Error("Claude n'est pas disponible ici."); };
+
+async function save(filename, data, el) {
+  if (!downloads && !window.claude) { // page ouverte hors claude.ai (studio.py) : téléchargement classique
+    const a = document.createElement('a'); a.href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data])); a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000); el.textContent = 'Fichier enregistré : ' + filename; return;
+  }
+  if (!downloads) { el.textContent = "L'enregistrement de fichiers n'est pas disponible ici. Ouvre la page depuis claude.ai."; return; }
+  try { await downloads.save({ filename, data }); el.textContent = 'Fichier enregistré : ' + filename; }
+  catch (e) { el.textContent = e.code === 'declined' ? 'Enregistrement annulé.' : 'Enregistrement impossible : ' + e.message; }
+}
+
+// ================= Vidéo → shorts =================
+const cv = $('cv'), ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+const small = Object.assign(document.createElement('canvas'), { width: 27, height: 48 }), sctx = small.getContext('2d');
+
+// Énergie sonore par seconde (RMS du canal 0, un échantillon sur 4)
+function energyPerSec(buf) {
+  const sr = buf.sampleRate, d = buf.getChannelData(0), n = Math.floor(buf.length / sr), e = [];
+  for (let s = 0; s < n; s++) { let sum = 0; for (let i = s * sr; i < (s + 1) * sr; i += 4) sum += d[i] * d[i]; e.push(Math.sqrt(sum / (sr / 4))); }
+  return e;
+}
+
+const loadVid = src => new Promise((res, rej) => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto'; v.onloadeddata = () => res(v); v.onerror = () => rej(new Error('Format vidéo non lu par ce navigateur. Essaie un MP4 (H.264).')); v.src = src; });
+const seek = (v, t) => new Promise(r => { v.onseeked = () => { v.onseeked = null; r(); }; v.currentTime = t; });
+
+async function grabFrames(v, s, len) {
+  const c = document.createElement('canvas'); c.width = 480; c.height = Math.round(480 * v.videoHeight / v.videoWidth) || 270;
+  const out = [];
+  for (const t of [s + len * .15, s + len * .5, s + len * .85]) {
+    await seek(v, t); c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    out.push(await new Promise(r => c.toBlob(r, 'image/jpeg', .7)));
+  }
+  return out;
+}
+async function describe(v, s, len, i, k, name) {
+  const fb = { hook: k > 1 ? `Partie ${i + 1} : regarde jusqu'au bout` : "Regarde jusqu'au bout", description: `${name.replace(/\.[^.]+$/, '')} · partie ${i + 1}/${k} #shorts #fyp #pourtoi #viral #tiktok` };
+  if (!sample) return fb;
+  try {
+    const r = await sample.json(
+      `Voici 3 images tirées d'un extrait de ${len} s (partie ${i + 1}/${k}) d'une vidéo. Pour un short TikTok, écris en français : ` +
+      `"hook", une accroche choc de 6 mots maximum qui donne envie de regarder jusqu'au bout, fidèle à ce qu'on voit ; ` +
+      `"description", une description de 1-2 phrases avec 5 hashtags pertinents. Réponds uniquement en JSON : {"hook":"","description":""}`,
+      { images: await grabFrames(v, s, len), modelTier: 'quick' });
+    return { hook: String(r?.hook || fb.hook), description: String(r?.description || fb.description) };
+  } catch (e) {
+    if (e?.code === 'not_granted') sample = null;
+    return fb;
+  }
+}
+
+function drawText(txt, y, size, pop = 1, color = '#fff') {
+  ctx.save(); ctx.translate(W / 2, y); ctx.scale(pop, pop);
+  ctx.font = `${size}px "Archivo Black", "Arial Black", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = size / 5; ctx.strokeStyle = '#000'; ctx.fillStyle = color;
+  const lines = []; let line = '';
+  for (const w of String(txt).toUpperCase().split(' ')) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > W * 0.86 && line) { lines.push(line); line = w; } else line = t; }
+  lines.push(line);
+  lines.forEach((l, i) => { const ly = (i - (lines.length - 1) / 2) * size * 1.15; ctx.strokeText(l, 0, ly); ctx.fillText(l, 0, ly); });
+  ctx.restore();
+}
+function drawFrame(v, t, len, meta, i, k) {
+  // fond : la vidéo réduite puis agrandie = flou bon marché
+  sctx.drawImage(v, 0, 0, small.width, small.height);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(small, 0, 0, W, H);
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, W, H);
+  // premier plan : vidéo entière, zoom lent pour donner du mouvement
+  const vw = v.videoWidth, vh = v.videoHeight, z = 1 + 0.06 * t / len;
+  const s = (vw / vh > W / H ? W / vw : H / vh) * z, w = vw * s, h = vh * s;
+  ctx.drawImage(v, (W - w) / 2, (H - h) / 2, w, h);
+  if (t < 0.15) { ctx.fillStyle = `rgba(255,255,255,${1 - t / 0.15})`; ctx.fillRect(0, 0, W, H); } // flash d'ouverture
+  if (t < 3) drawText(meta.hook, H * 0.2, 104, Math.min(1, 0.6 + t * 2));
+  else drawText(meta.hook, H * 0.13, 64);
+  if (k > 1) drawText(`Partie ${i + 1}/${k}`, H * 0.85, 60, 1, '#ffd23f');
+  if (t > len - 2.5) drawText(ctaText(i, k, S.cta), H * 0.72, 72, Math.min(1, 0.6 + (t - len + 2.5) * 2));
+  const handle = String(S.handle || '').trim();
+  if (handle) { ctx.globalAlpha = 0.85; drawText(handle, H * 0.93, 44); ctx.globalAlpha = 1; }
+  ctx.fillStyle = '#ff4f86'; ctx.fillRect(0, 0, W * t / len, 14); // barre de progression
+}
+
+async function renderShort(v, buf, ac, s, len, meta, i, k, onTick) {
+  const stream = cv.captureStream(30), dest = ac.createMediaStreamDestination();
+  dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+  const mime = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m));
+  if (!mime) throw new Error('Ce navigateur ne sait pas enregistrer de vidéo. Utilise Chrome ou Edge.');
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bitrateBps(S.mbps) }), chunks = [];
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  const stopped = new Promise(r => rec.onstop = r);
+
+  await seek(v, s);
+  drawFrame(v, 0, len, meta, i, k);
+  await v.play();
+  let src = null;
+  if (buf) { src = ac.createBufferSource(); src.buffer = buf; src.connect(dest); src.start(0, s, len); } // son d'origine, joué hors haut-parleurs
+  rec.start();
+  const t0 = performance.now();
+  await new Promise(done => {
+    (function frame() {
+      const t = (performance.now() - t0) / 1000;
+      if (t >= len || v.ended) return done();
+      drawFrame(v, t, len, meta, i, k); onTick(t);
+      requestAnimationFrame(frame);
+    })();
+  });
+  rec.stop(); v.pause(); try { src?.stop(); } catch {}
+  await stopped;
+  stream.getTracks().forEach(t => t.stop());
+  return { blob: new Blob(chunks, { type: mime.split(';')[0] }), ext: mime.includes('mp4') ? 'mp4' : 'webm' };
+}
+
+let S = {}; // réglages du travail en cours
+const readSettings = () => ({ len: +$('len').value || 30, max: +$('max').value || 10, maxMode: $('maxMode').checked, mbps: $('mbps').value, handle: $('handle').value, cta: $('cta').value });
+
+// Traite une vidéo du travail, à partir de son premier short non fait
+async function runFile(entry, file, ac, fi, nf) {
+  const tag = nf > 1 ? `Vidéo ${fi + 1}/${nf} · ` : '';
+  status(tag + 'lecture…');
+  const v = await loadVid(URL.createObjectURL(file)), dur = v.duration;
+  if (!isFinite(dur) || dur < 3) throw new Error('vidéo trop courte ou illisible');
+  status(tag + 'analyse du son…');
+  let buf = null;
+  // shortcut: décode tout le son en mémoire, OK jusqu'à ~20 min ; au-delà, couper la vidéo avant
+  if (file.size < 1.5e9) try { buf = await ac.decodeAudioData(await file.arrayBuffer()); } catch {}
+  const len = Math.min(Math.max(5, S.len), Math.floor(dur));
+  if (!entry.starts) {
+    const energy = buf ? energyPerSec(buf) : Array(Math.floor(dur)).fill(1); // sans son : découpe régulière
+    entry.starts = planSegments(energy, dur, len, S.max, S.maxMode);
+    entry.len = len;
+  }
+  const k = entry.starts.length;
+  for (let i = entry.done; i < k; i++) {
+    status(`${tag}short ${i + 1}/${k} : écriture de l'accroche…`);
+    const meta = await describe(v, entry.starts[i], entry.len, i, k, file.name);
+    const { blob, ext } = await renderShort(v, buf, ac, entry.starts[i], entry.len, meta, i, k, t => {
+      status(`${tag}short ${i + 1}/${k} : montage ${Math.round(t)} / ${entry.len} s`);
+      $('prog').style.width = ((fi + (i + t / entry.len) / k) / nf * 100) + '%';
+    });
+    const rec = { date: new Date().toISOString(), theme: file.name, hook: meta.hook, description: meta.description, start: entry.starts[i], ext, blob };
+    try { await put('videos', rec); } catch { await save(`short-${fi + 1}-${i + 1}.${ext}`, blob, $('sStatus')); }
+    entry.done = i + 1;
+    await onShortDone();
+    renderGallery();
+  }
+  return !!buf;
+}
+let onShortDone = async () => {};
+
+async function runJob(job, files, ac) {
+  S = job.settings; job.id = 'current';
+  onShortDone = () => put('jobs', job).catch(() => {}); // sauvegarde de l'avancement après chaque short
+  $('resume').hidden = true;
+  await onShortDone();
+  let wake = null; try { wake = await navigator.wakeLock?.request('screen'); } catch {}
+  const notes = [];
+  try {
+    $('prog').style.width = '0';
+    for (let fi = 0; fi < job.files.length; fi++) {
+      const entry = job.files[fi];
+      if (isFinished(entry)) continue;
+      try { if (!await runFile(entry, files[fi], ac, fi, job.files.length)) notes.push(`${entry.name} : sans son`); }
+      catch (e) { entry.skipped = true; notes.push(`${entry.name} sautée (${e.message})`); await onShortDone(); }
+    }
+    $('prog').style.width = '100%';
+    const total = job.files.reduce((n, f) => n + f.done, 0);
+    status(`Terminé : ${total} short${total > 1 ? 's' : ''} prêt${total > 1 ? 's' : ''}.${notes.length ? ' ' + notes.join(' · ') + '.' : ''} Clique sur « Exporter tous les shorts ».`);
+  } finally {
+    wake?.release?.().catch(() => {}); ac.close(); onShortDone = async () => {};
+    if (!nextPending(job)) try { await wait((await os('jobs', 'readwrite')).delete('current')); } catch {}
+    showResume();
+  }
+}
+
+// Bandeau de reprise d'un montage interrompu
+async function showResume() {
+  let job = null; try { job = await wait((await os('jobs')).get('current')); } catch {}
+  const next = job && nextPending(job);
+  $('resume').hidden = !next;
+  if (!next) return;
+  const done = job.files.reduce((n, f) => n + f.done, 0), todo = job.files.filter(f => !isFinished(f)).map(f => f.name);
+  $('resumeTxt').textContent = `Montage interrompu : ${done} short${done > 1 ? 's' : ''} déjà fait${done > 1 ? 's' : ''}. Re-sélectionne ${todo.length > 1 ? 'ces vidéos' : 'cette vidéo'} ci-dessous (${todo.join(', ')}), puis clique sur « Reprendre ».`;
+  $('resumeGo').onclick = () => {
+    const ac = new AudioContext();
+    busy($('resumeGo'), async () => {
+      const { ordered, missing } = matchFiles(job, $('src').files);
+      if (missing.length) { ac.close(); throw new Error('Il manque : ' + missing.join(', ') + '. Sélectionne exactement les mêmes fichiers.'); }
+      await runJob(job, ordered, ac);
+    });
+  };
+  let armed = false;
+  $('resumeDrop').onclick = async () => {
+    if (!armed) { armed = true; $('resumeDrop').textContent = 'Confirmer ?'; return; }
+    try { await wait((await os('jobs', 'readwrite')).delete('current')); } catch {}
+    $('resumeDrop').textContent = 'Abandonner'; showResume();
+  };
+}
+
+$('go').onclick = () => {
+  const ac = new AudioContext(); // créé pendant le clic : le navigateur autorise alors le son
+  busy($('go'), async () => {
+    const files = [...$('src').files];
+    if (!files.length) { ac.close(); throw new Error('Choisis au moins une vidéo.'); }
+    await runJob(buildJob(files, readSettings()), files, ac);
+  });
+};
+
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+async function renderGallery() {
+  const list = (await all('videos')).reverse(), ul = $('gallery');
+  ul.textContent = ''; $('galEmpty').hidden = list.length > 0;
+  for (const v of list) {
+    const li = document.createElement('li'), name = `short-${v.id}.${v.ext}`;
+    const vid = document.createElement('video'); vid.src = URL.createObjectURL(v.blob); vid.controls = true; vid.playsInline = true;
+    const info = document.createElement('div'); info.className = 'mut';
+    info.textContent = `${v.hook || v.theme}${v.start != null ? ' · à ' + fmt(v.start) : ''}`;
+    const btns = document.createElement('div'); btns.className = 'btns';
+    const dl = document.createElement('button'); dl.textContent = 'Enregistrer'; dl.onclick = () => save(name, v.blob, $('sStatus'));
+    const cp = document.createElement('button'); cp.className = 'ghost'; cp.textContent = 'Copier la description';
+    cp.onclick = async () => { try { await navigator.clipboard.writeText(v.description); status('Description copiée. Colle-la sur TikTok.'); } catch { status(v.description); } };
+    let armed = false;
+    const del = document.createElement('button'); del.className = 'ghost'; del.textContent = 'Supprimer';
+    del.onclick = async () => { if (!armed) { armed = true; del.textContent = 'Confirmer ?'; return; } await wait((await os('videos', 'readwrite')).delete(v.id)); renderGallery(); };
+    btns.append(dl, cp, del);
+    li.append(vid, info, btns); ul.append(li);
+  }
+}
+
+async function makeZip() {
+  const list = await all('videos');
+  if (!list.length) throw new Error('Aucun short à exporter.');
+  if (!window.JSZip) throw new Error("L'outil ZIP n'a pas pu se charger. Enregistre les shorts un par un.");
+  status('Préparation du ZIP…');
+  const zip = new JSZip(); let txt = '';
+  for (const v of list) { const n = `short-${v.id}.${v.ext}`; zip.file(n, v.blob); txt += `${n}\n${v.hook || ''}\n${v.description}\n\n`; }
+  zip.file('descriptions-tiktok.txt', txt);
+  return zip.generateAsync({ type: 'blob', compression: 'STORE' }); // vidéos déjà compressées
+}
+$('exportAll').onclick = () => busy($('exportAll'), async () => save(`shorts-${today()}.zip`, await makeZip(), $('sStatus')));
+
+// ---- Envoi dans les brouillons TikTok : seulement quand l'app est lancée par studio.py ----
+// Serveur local studio.py : même origine en local, sinon appelé depuis le site (GitHub Pages)
+const API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '' : 'http://localhost:8765';
+async function tiktokStatus() {
+  if (window.claude) return; // claude.ai bloque l'accès au serveur local
+  $('tiktokLogin').href = API + '/api/tiktok/login';
+  let st; try { const r = await fetch(API + '/api/tiktok/status'); if (!r.ok) return; st = await r.json(); } catch { return; }
+  $('tiktokBox').hidden = false;
+  $('tiktokCreds').hidden = st.configured;
+  $('tiktokEdit').hidden = !st.configured;
+  $('tiktokLogin').hidden = !st.configured || st.logged;
+  $('tiktokSend').disabled = !(st.configured && st.logged);
+  $('tiktokInfo').textContent = !st.configured ? 'Entre les identifiants de ton app TikTok (portail développeur > Credentials). Ils restent sur ton PC.'
+    : st.logged ? 'Compte TikTok connecté.' : 'Identifiants enregistrés. Connecte ton compte TikTok (une seule fois).';
+}
+// La connexion se fait dans un autre onglet : on relit l'état au retour sur celui-ci
+window.addEventListener('focus', tiktokStatus);
+$('tiktokEdit').onclick = () => { $('tiktokCreds').hidden = false; $('tiktokEdit').hidden = true; $('tkKey').focus(); };
+$('tiktokCreds').onsubmit = e => {
+  e.preventDefault();
+  busy($('tiktokCreds').querySelector('button'), async () => {
+    const r = await fetch(API + '/api/tiktok/config', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Studio': '1' },
+      body: JSON.stringify({ key: $('tkKey').value.trim(), secret: $('tkSecret').value.trim() }) });
+    if (!r.ok) throw new Error(await r.text());
+    $('tkSecret').value = '';
+    await tiktokStatus();
+    status('Identifiants TikTok enregistrés.');
+  });
+};
+$('tiktokSend').onclick = () => busy($('tiktokSend'), async () => {
+  const zip = await makeZip(), out = $('tiktokLog');
+  out.hidden = false; out.textContent = 'Envoi vers les brouillons TikTok…\n';
+  status('Envoi vers TikTok…');
+  const r = await fetch(API + '/api/tiktok/upload', { method: 'POST', headers: { 'Content-Type': 'application/zip', 'X-Studio': '1' }, body: zip });
+  if (!r.ok) throw new Error(await r.text());
+  const rd = r.body.getReader(), dec = new TextDecoder();
+  for (;;) { const { done, value } = await rd.read(); if (done) break; out.textContent += dec.decode(value, { stream: true }); }
+  status('Envoi TikTok terminé, voir le journal.');
+});
+
+let clearArmed = false;
+$('clearAll').onclick = async () => {
+  if (!clearArmed) { clearArmed = true; $('clearAll').textContent = 'Confirmer : tout effacer ?'; return; }
+  clearArmed = false; $('clearAll').textContent = 'Tout effacer';
+  try { await wait((await os('videos', 'readwrite')).clear()); } catch {}
+  renderGallery(); status('Shorts effacés.');
+};
+
+// ================= Outils annexes =================
+$('analyze').onclick = () => busy($('analyze'), async () => {
+  need();
+  const f = $('img').files[0];
+  $('out').textContent = 'Réflexion…';
+  await sample($('q').value.trim() || 'Décris ce contenu.', { ...(f && { images: [f] }), cache: false, onText: ({ text }) => { $('out').textContent = text; } });
+}, $('out'));
+
+
+$('plan').onclick = () => busy($('plan'), async () => {
+  need();
+  const theme = $('theme').value.trim();
+  if (!theme) throw new Error('Indique un thème');
+  const n = Math.min(50, Math.max(1, +$('count').value || 50)), dur = Math.max(1, +$('dur').value || 10);
+  $('quotaTxt').textContent = 'Claude écrit les prompts…';
+  const r = await sample.json(
+    `Écris ${n} prompts vidéo distincts pour Google Flow (Veo), chacun pour un plan de ${dur} secondes, thème : "${theme}". ` +
+    `Chaque prompt (en anglais, 40-70 mots) décrit sujet, action, mouvement de caméra, lumière, style, ambiance sonore. ` +
+    `Réponds uniquement en JSON : {"prompts":[{"title":"titre court en français","prompt":"..."}]}`);
+  if (!Array.isArray(r?.prompts)) throw new Error('Réponse inattendue de Claude');
+  for (const p of r.prompts) await put('prompts', { theme, title: String(p.title), prompt: String(p.prompt), dur, doneDate: null });
+  renderPrompts();
+}, $('quotaTxt'));
+
+async function renderPrompts() {
+  const list = await all('prompts'), used = usedToday(list);
+  $('quotaTxt').textContent = `${used} / ${LIMIT} s aujourd'hui · ${list.filter(p => !p.doneDate).length} prompts en attente`;
+  $('quotaBar').style.width = Math.min(100, used / LIMIT * 100) + '%';
+  const ol = $('prompts'); ol.textContent = '';
+  for (const p of list) {
+    const li = document.createElement('li'), lab = document.createElement('label'), cb = document.createElement('input'), t = document.createElement('span');
+    lab.style.cssText = 'display:flex;gap:8px;color:var(--fg);font-size:.9rem';
+    cb.type = 'checkbox'; cb.checked = !!p.doneDate; cb.style.width = 'auto';
+    cb.onchange = async () => {
+      if (cb.checked && used + p.dur > LIMIT) { cb.checked = false; $('quotaTxt').textContent = "Quota de 500 s atteint pour aujourd'hui."; return; }
+      p.doneDate = cb.checked ? today() : null;
+      await put('prompts', p); renderPrompts();
+    };
+    t.textContent = `${p.title} (${p.dur}s) — ${p.prompt}`;
+    if (p.doneDate) t.className = 'done';
+    lab.append(cb, t); li.append(lab); ol.append(li);
+  }
+}
+const pendingText = async () => (await all('prompts')).filter(p => !p.doneDate).map((p, i) => `${i + 1}. ${p.title} (${p.dur}s)\n${p.prompt}`).join('\n\n');
+$('copy').onclick = async () => {
+  const txt = await pendingText();
+  try { await navigator.clipboard.writeText(txt); $('quotaTxt').textContent = 'Prompts copiés.'; }
+  catch { $('out').textContent = txt; $('quotaTxt').textContent = "Copie bloquée : les prompts sont affichés dans la zone d'analyse, sélectionne-les."; }
+};
+$('dlTxt').onclick = async () => save(`prompts-flow-${today()}.txt`, await pendingText(), $('quotaTxt'));
+
+// Pseudo et appel à l'action mémorisés dans ce navigateur
+for (const id of ['handle', 'cta']) {
+  try { $(id).value = localStorage.getItem('ss-' + id) || ''; } catch {}
+  $(id).oninput = () => { try { localStorage.setItem('ss-' + id, $(id).value); } catch {} };
+}
+renderPrompts(); renderGallery(); showResume(); tiktokStatus();
+// Mode maximum : le nombre de shorts ne sert plus, on le grise
+($('maxMode').onchange = () => { $('max').disabled = $('maxMode').checked; })();
+if (!window.claude) $('localLink').hidden = true; // le lien ne sert que depuis claude.ai
+
+// Capacités Claude (absentes hors claude.ai)
+(async () => {
+  if (!window.claude?.use) return;
+  [sample, downloads] = await Promise.all([claude.use('sample'), claude.use('downloads')]);
+  const dict = await claude.use('dictation');
+  if (dict) {
+    const b = $('dictate'); b.hidden = false;
+    dict.onFinal(({ text }) => { $('q').value += (/\s$/.test($('q').value) ? '' : ' ') + text; });
+    dict.onState(({ state }) => { b.textContent = state === 'idle' ? '🎤 Dicter' : '⏹ Arrêter'; });
+    b.onclick = () => (b.textContent.includes('Arrêter') ? dict.stop() : dict.start()).catch(() => {});
+  }
+})();
+</script>
+
+</body>
 </html>
