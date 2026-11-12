@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DivMaxOMG Privacy Policy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600&display=swap">
+<style>
+/* Layout : document légal sur une colonne de lecture, bandeau de marque en tête */
+:root{
+  --bg:#faf8fc; --fg:#1f1430; --mut:#655a74; --line:#e4dcef; --brand:#34125c; --accent:#d81b62;
+  --display:"Archivo Black","Arial Black",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#140d1f;--fg:#efe9f6;--mut:#a99cba;--line:#2e2340;--brand:#c9a8ff;--accent:#ff5c98;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#140d1f;--fg:#efe9f6;--mut:#a99cba;--line:#2e2340;--brand:#c9a8ff;--accent:#ff5c98;color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 var(--body)}
+main{max-width:720px;margin:auto;padding-block:32px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{font:1rem var(--display);color:var(--accent);letter-spacing:.02em}
+h1{font:clamp(1.8rem,5vw,2.4rem)/1.1 var(--display);color:var(--brand);margin:6px 0 8px;text-wrap:balance}
+h2{font:1.15rem/1.3 var(--display);color:var(--brand);margin:32px 0 8px;text-wrap:balance}
+p,li{max-width:65ch}
+ul{padding-left:1.2em;display:grid;gap:6px}
+.meta{color:var(--mut);font-size:.9rem;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:8px}
+code{font-size:.9em;background:var(--line);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--mut);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">DivMaxOMG</div>
+  <h1>Privacy Policy</h1>
+  <p class="meta">Effective date: November 12, 2026</p>
+
+  <p>DivMaxOMG is a video tool that turns your long videos into vertical short videos and, when you ask it to, sends them to the drafts of your own TikTok account. This policy explains what data the app handles and where it goes. In short: the app runs on your own computer, and the developer of DivMaxOMG does not collect, receive or store any of your data.</p>
+
+  <h2>Where the app runs</h2>
+  <p>DivMaxOMG runs locally. A small program on your computer serves the app to your web browser at <code>http://localhost:8765</code>. Video processing, editing and storage all happen in your browser and on your computer. There is no DivMaxOMG server, account or cloud storage.</p>
+
+  <h2>Data the app handles</h2>
+  <ul>
+    <li><strong>Your videos.</strong> The videos you select are read and edited inside your browser. They are never sent to the developer. The shorts the app creates are kept in your browser's local storage until you delete them.</li>
+    <li><strong>TikTok authorization data.</strong> When you connect your TikTok account, TikTok gives the app an access token, a refresh token, your TikTok open ID and the list of granted permissions. These are saved only in a file on your computer (<code>~/.config/studio-shorts/</code>) that only your user account can read.</li>
+    <li><strong>App credentials.</strong> The TikTok client key and client secret of the app are saved in the same protected local folder.</li>
+    <li><strong>Upload history.</strong> To avoid sending the same short twice, the app keeps a local list of file names and sizes already sent.</li>
+  </ul>
+
+  <h2>How TikTok data is used</h2>
+  <p>The app requests two TikTok permissions:</p>
+  <ul>
+    <li><code>user.info.basic</code>, required by TikTok to sign in. The app only uses the open ID returned at sign-in and does not read or store your profile, followers or videos.</li>
+    <li><code>video.upload</code>, used only when you click the button to send your shorts. Each short is uploaded to your TikTok inbox as a draft. Nothing is published automatically: you review, edit and publish each draft yourself in the TikTok app.</li>
+  </ul>
+  <p>TikTok data is never used for advertising, profiling or analytics, and is never sold or shared with anyone.</p>
+
+  <h2>Third-party services</h2>
+  <ul>
+    <li><strong>TikTok</strong> receives the shorts you choose to upload, under <a href="https://www.tiktok.com/legal/privacy-policy" target="_blank" rel="noopener">TikTok's Privacy Policy</a>.</li>
+    <li><strong>Google Fonts and cdnjs</strong> deliver the app's fonts and its ZIP library. Like any website, they can see your IP address when your browser downloads these files.</li>
+    <li><strong>Anthropic (optional online version).</strong> If you use the version of the app hosted on claude.ai, three still images from each short are sent to Claude, under your own Claude account, to write a title. The local version does not do this.</li>
+  </ul>
+
+  <h2>Retention and deletion</h2>
+  <ul>
+    <li>Shorts stay in your browser until you click "Tout effacer" or clear the site data.</li>
+    <li>Tokens and credentials stay on your computer until you delete the folder <code>~/.config/studio-shorts/</code>.</li>
+    <li>You can revoke the app's access at any time in TikTok: Settings and privacy, then Security and permissions, then Apps and services permissions.</li>
+  </ul>
+
+  <h2>Children</h2>
+  <p>DivMaxOMG is not intended for children under 13, and must only be used by people allowed to hold a TikTok account under TikTok's own terms.</p>
+
+  <h2>Your rights</h2>
+  <p>Because the developer holds no personal data about you, there is nothing to access, correct or delete on the developer's side. All your data is under your control on your own device and in your TikTok account.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, the new version will be posted on this page with a new effective date.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy: send a message to the TikTok account <strong>@DivMaxOMG</strong>.</p>
+
+  <footer>DivMaxOMG is an independent tool and is not affiliated with, endorsed or sponsored by TikTok. See also the <a href="terms.html">Terms of Service</a>.</footer>
+</main>
+</body>
+</html>
