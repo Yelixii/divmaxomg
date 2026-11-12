@@ -466,8 +466,14 @@ const API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '' : 'http://
 async function tiktokStatus() {
   if (window.claude) return; // claude.ai bloque l'accès au serveur local
   $('tiktokLogin').href = API + '/api/tiktok/login';
-  let st; try { const r = await fetch(API + '/api/tiktok/status'); if (!r.ok) return; st = await r.json(); } catch { return; }
   $('tiktokBox').hidden = false;
+  let st = null; try { const r = await fetch(API + '/api/tiktok/status'); if (r.ok) st = await r.json(); } catch {}
+  if (!st) { // serveur local absent, ancien ou bloqué : on garde la zone visible et on explique
+    $('tiktokCreds').hidden = $('tiktokEdit').hidden = $('tiktokLogin').hidden = true;
+    $('tiktokSend').disabled = true;
+    $('tiktokInfo').textContent = "Envoi TikTok indisponible : lance Studio Shorts sur ton PC (raccourci du Bureau), autorise l'accès au réseau local si le navigateur le demande, puis reviens sur cet onglet.";
+    return;
+  }
   $('tiktokCreds').hidden = st.configured;
   $('tiktokEdit').hidden = !st.configured;
   $('tiktokLogin').hidden = !st.configured || st.logged;
