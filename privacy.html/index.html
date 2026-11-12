@@ -32,48 +32,54 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:v
 <main>
   <div class="brand">DivMaxOMG</div>
   <h1>Privacy Policy</h1>
-  <p class="meta">Effective date: November 12, 2026</p>
+  <p class="meta">Effective date: November 12, 2026 (updated for accounts)</p>
 
-  <p>DivMaxOMG is a video tool that turns your long videos into vertical short videos and, when you ask it to, sends them to the drafts of your own TikTok account. This policy explains what data the app handles and where it goes. In short: the app runs on your own computer, and the developer of DivMaxOMG does not collect, receive or store any of your data.</p>
+  <p>DivMaxOMG is a web app that turns your long videos into vertical short videos and, when you ask it to, posts them to your own TikTok account or sends them to your TikTok drafts. This policy explains what data the app handles, where it is stored and how you can delete it.</p>
 
   <h2>Where the app runs</h2>
-  <p>DivMaxOMG runs locally. A small program on your computer serves the app to your web browser at <code>http://localhost:8765</code>. Video processing, editing and storage all happen in your browser and on your computer. There is no DivMaxOMG server, account or cloud storage.</p>
+  <p>The app is served from <code>https://divmaxomg.divmaxomg.workers.dev</code>, hosted by Cloudflare. Video cutting and editing happen entirely in your web browser: your videos are never uploaded to our server, except the shorts you explicitly choose to send to TikTok, which pass through our server on their way to TikTok and are not kept.</p>
 
-  <h2>Data the app handles</h2>
+  <h2>Data we store</h2>
   <ul>
-    <li><strong>Your videos.</strong> The videos you select are read and edited inside your browser. They are never sent to the developer. The shorts the app creates are kept in your browser's local storage until you delete them.</li>
-    <li><strong>TikTok authorization data.</strong> When you connect your TikTok account, TikTok gives the app an access token, a refresh token, your TikTok open ID and the list of granted permissions. These are saved only in a file on your computer (<code>~/.config/studio-shorts/</code>) that only your user account can read.</li>
-    <li><strong>App credentials.</strong> The TikTok client key and client secret of the app are saved in the same protected local folder.</li>
-    <li><strong>Upload history.</strong> To avoid sending the same short twice, the app keeps a local list of file names and sizes already sent.</li>
+    <li><strong>Account.</strong> Your email address and a salted, one-way hash of your password (PBKDF2). We never store or see your password in clear text.</li>
+    <li><strong>Sessions.</strong> When you sign in, a random session identifier is stored in a secure, HttpOnly cookie. Our database only keeps a hash of it and its expiry date (7 days).</li>
+    <li><strong>TikTok connection.</strong> When you connect TikTok, we store your TikTok open ID and the access and refresh tokens TikTok gives us, encrypted with AES-256-GCM. These tokens are never sent to your browser.</li>
+    <li><strong>Security logs.</strong> To block password-guessing, we keep failed sign-in and sign-up attempts (email address or IP address, and time) for at most 24 hours.</li>
+    <li><strong>In your browser only.</strong> The shorts you create, your settings and your on-screen handle stay in your browser's local storage on your device.</li>
   </ul>
 
   <h2>How TikTok data is used</h2>
-  <p>The app requests two TikTok permissions:</p>
+  <p>The app requests three TikTok permissions:</p>
   <ul>
-    <li><code>user.info.basic</code>, required by TikTok to sign in. The app only uses the open ID returned at sign-in and does not read or store your profile, followers or videos.</li>
-    <li><code>video.upload</code>, used only when you click the button to send your shorts. Each short is uploaded to your TikTok inbox as a draft. Nothing is published automatically: you review, edit and publish each draft yourself in the TikTok app.</li>
+    <li><code>user.info.basic</code>, to sign in and to show your TikTok avatar and nickname before you post.</li>
+    <li><code>video.publish</code>, used only when you click "Publier" to post the shorts you selected, with the privacy level, interaction settings and commercial content disclosure you chose.</li>
+    <li><code>video.upload</code>, used only when you choose to send shorts to your TikTok drafts.</li>
   </ul>
   <p>TikTok data is never used for advertising, profiling or analytics, and is never sold or shared with anyone.</p>
 
+  <h2>Cookies</h2>
+  <p>We use only strictly necessary cookies: a session cookie to keep you signed in, and a short-lived cookie (10 minutes) to protect the TikTok connection step. Both are HttpOnly, Secure and SameSite=Lax. There are no advertising or tracking cookies.</p>
+
   <h2>Third-party services</h2>
   <ul>
-    <li><strong>TikTok</strong> receives the shorts you choose to upload, under <a href="https://www.tiktok.com/legal/privacy-policy" target="_blank" rel="noopener">TikTok's Privacy Policy</a>.</li>
-    <li><strong>Google Fonts and cdnjs</strong> deliver the app's fonts and its ZIP library. Like any website, they can see your IP address when your browser downloads these files.</li>
-    <li><strong>Anthropic (optional online version).</strong> If you use the version of the app hosted on claude.ai, three still images from each short are sent to Claude, under your own Claude account, to write a title. The local version does not do this.</li>
+    <li><strong>Cloudflare</strong> hosts the app and its database, under <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare's Privacy Policy</a>.</li>
+    <li><strong>TikTok</strong> receives the shorts you choose to post or upload, under <a href="https://www.tiktok.com/legal/privacy-policy" target="_blank" rel="noopener">TikTok's Privacy Policy</a>.</li>
+    <li><strong>Google Fonts and cdnjs</strong> deliver the app's fonts and its ZIP library. They can see your IP address when your browser downloads these files.</li>
   </ul>
 
   <h2>Retention and deletion</h2>
   <ul>
+    <li>You can delete your account at any time in the app ("Supprimer mon compte"). This immediately deletes your email, password hash, sessions and TikTok tokens, and revokes the app's TikTok access.</li>
+    <li>"Se déconnecter" next to your TikTok account deletes your TikTok tokens and revokes access.</li>
     <li>Shorts stay in your browser until you click "Tout effacer" or clear the site data.</li>
-    <li>Tokens and credentials stay on your computer until you delete the folder <code>~/.config/studio-shorts/</code>.</li>
-    <li>You can revoke the app's access at any time in TikTok: Settings and privacy, then Security and permissions, then Apps and services permissions.</li>
+    <li>You can also revoke access in TikTok: Settings and privacy, then Security and permissions, then Apps and services permissions.</li>
   </ul>
 
   <h2>Children</h2>
   <p>DivMaxOMG is not intended for children under 13, and must only be used by people allowed to hold a TikTok account under TikTok's own terms.</p>
 
   <h2>Your rights</h2>
-  <p>Because the developer holds no personal data about you, there is nothing to access, correct or delete on the developer's side. All your data is under your control on your own device and in your TikTok account.</p>
+  <p>You can access, correct or delete your data at any time. Your account page shows the email address we hold, and "Supprimer mon compte" erases everything. For any other request, contact us as shown below.</p>
 
   <h2>Changes</h2>
   <p>If this policy changes, the new version will be posted on this page with a new effective date.</p>
